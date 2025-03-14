@@ -25,12 +25,14 @@ class ConditionalBlock(DecisionBlock):
             self,
             block_id:str,
             variable: str,
+            cmp_value: str,
             operator: str,
             true_branch: str,
             false_branch: str,
             ):
         super().__init__(block_id, BlockType.CONDITIONAL)
         self.variable = variable
+        self.cmp_value = cmp_value
         self.operator = operator
         self.true_branch = true_branch
         self.false_branch = false_branch
@@ -48,7 +50,7 @@ class Policy:
             blocks: List[DecisionBlock],
             variables: List[Tuple[str, str]]
             ):
-        self.id = id  # Unique identifier based on memory location
+        self.id = id
         self.name = name
         self.blocks = blocks
         self.variables = variables
