@@ -1,1 +1,20 @@
-.venv
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Pip dependency cache
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VS Code settings (if using VS Code)
+.vscode/
+
+# Environment variables and secrets
+.env
+*.env
