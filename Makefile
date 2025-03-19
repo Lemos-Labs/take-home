@@ -19,4 +19,4 @@ run-backend: install-backend-deps
 
 # Deletes all PolicyDB.
 clean-policies:
-	@rm -rf $(POLICY_DB_DIR)
+	@rm -rf $(BACKEND_DIR)/$(POLICY_DB_DIR)
