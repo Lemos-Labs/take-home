@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple, Union
+from typing import List, Union
 
 class BlockType(Enum):
     START = "StartBlock",
@@ -48,7 +48,7 @@ class Policy:
             id: str,
             name: str,
             blocks: List[DecisionBlock],
-            variables: List[Tuple[str, str]]
+            variables: List[str]
             ):
         self.id = id
         self.name = name

@@ -13,7 +13,19 @@ os.makedirs(POLICY_DB_DIR, exist_ok=True)
 def get_policy_path(policy_id: str) -> str:
     return os.path.join(POLICY_DB_DIR, f"{policy_id}.json")
 
-def validate_policy(policy):
+def validate_policy(policy, args):
+    block_validation = check_block_amount(policy)
+    if  block_validation is not None:
+        return block_validation
+
+    passed_variables = check_passed_variables(policy, args)
+    if passed_variables is not None:
+        return passed_variables
+    
+    return None
+
+
+def check_block_amount(policy):
     """
     Validates that a poilicy has exactly one Start block and at least
     one Conditional block, otherwise, the policy will not be issued.
@@ -36,6 +48,19 @@ def validate_policy(policy):
         return "Policy must have at least one Conditional block."
 
     return None     # Policy is valid
+
+def check_passed_variables(policy, args):
+    """
+    Checks if the provided variables in query parameters 
+    match the expected policy variables.
+    """
+    variables = policy.get("variables", [])
+
+    for arg in args:
+        if arg not in variables:
+            return " Unexpected variable '{arg}' in query parameters"
+
+    return None
 
 @app.route("/policies", methods=["GET", "POST"])
 def policies():
@@ -104,11 +129,21 @@ def execute_policy(policy_id):
 
     with open(policy_path, "r") as f:
         policy = json.load(f)
-        
-    # Execute the policy (you will implement this)
-    decision = execution_engine.execute_policy(policy)
 
-    return jsonify({"decision": decision})
+    # Extract query parameters
+    args = request.args
+
+    print(args.to_dict(flat=True))
+
+    validation = validate_policy(policy, args)
+    if validation:
+        return jsonify({"error": validation}), 400
+
+    args = request.args.to_dict(flat=True)
+    print(args)
+    decision = execution_engine.execute_policy(policy,args)
+
+    return jsonify({"decision": decision}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
