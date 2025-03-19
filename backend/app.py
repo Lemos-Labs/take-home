@@ -13,17 +13,12 @@ os.makedirs(POLICY_DB_DIR, exist_ok=True)
 def get_policy_path(policy_id: str) -> str:
     return os.path.join(POLICY_DB_DIR, f"{policy_id}.json")
 
-def validate_policy(policy, args):
+def validate_policy(policy):
     block_validation = check_block_amount(policy)
     if  block_validation is not None:
         return block_validation
 
-    passed_variables = check_passed_variables(policy, args)
-    if passed_variables is not None:
-        return passed_variables
-    
     return None
-
 
 def check_block_amount(policy):
     """
@@ -56,43 +51,42 @@ def check_passed_variables(policy, args):
     """
     variables = policy.get("variables", [])
 
+    for var in variables:
+        if var not in args:
+            return f"Expected variable '{var}' in query parameters but variable was not found.",
+
     for arg in args:
         if arg not in variables:
-            return " Unexpected variable '{arg}' in query parameters"
+            return f"Unexpected variable '{arg}' in query parameters."
 
     return None
 
-@app.route("/policies", methods=["GET", "POST"])
+@app.route("/policies/new", methods=["POST"])
 def policies():
-    if request.method == "POST":
-        data = request.get_json()
+    # Creates new policy
+    data = request.get_json()
 
-        if not data or "blocks" not in data:
-            return jsonify({"error": "Invalid policy format"}), 400
+    if not data or "blocks" not in data:
+        return jsonify({"error": "Invalid policy format"}), 400
 
-        policy_id = str(uuid.uuid4())
-        policy_path = get_policy_path(policy_id)
+    policy_id = str(uuid.uuid4())
+    policy_path = get_policy_path(policy_id)
 
-        validation_err = validate_policy(data)
-        if validation_err:
-            return jsonify({"error": validation_err}), 400
+    validation_err = validate_policy(data)
+    if validation_err:
+        return jsonify({"error": validation_err}), 400
 
-        policy_data = {
-            "id": policy_id,
-            "name": data["name"],
-            "variables": data["variables"],
-            "blocks": data["blocks"]
-        }
+    policy_data = {
+        "id": policy_id,
+        "name": data["name"],
+        "variables": data["variables"],
+        "blocks": data["blocks"]
+    }
 
-        with open(policy_path, "w") as f:
-            json.dump(policy_data, f, indent=4)
+    with open(policy_path, "w") as f:
+        json.dump(policy_data, f, indent=4)
 
-        return jsonify({"message": "Successfully created policy", "policy_id": policy_id}), 201
-    
-    else:  # GET request
-        """List all stored policies"""
-        policies = [f.replace(".json", "") for f in os.listdir(POLICY_DB_DIR) if f.endswith(".json")]
-        return jsonify({"policies": policies})
+    return jsonify({"message": "Successfully created policy", "policy_id": policy_id}), 201
 
 @app.route("/policies/<policy_id>", methods=["GET"])
 def get_policy(policy_id: str):
@@ -114,7 +108,7 @@ def delete_policy(policy_id):
         return jsonify({"error": "Policy not found"}), 404
 
     os.remove(policy_path)
-    return jsonify({"message": f"Policy {policy_id} deleted successfully"})
+    return jsonify({"message": f"Policy {policy_id} deleted successfully."})
 
 @app.route("/execute/<policy_id>", methods=["POST"])
 def execute_policy(policy_id):
@@ -135,9 +129,9 @@ def execute_policy(policy_id):
 
     print(args.to_dict(flat=True))
 
-    validation = validate_policy(policy, args)
-    if validation:
-        return jsonify({"error": validation}), 400
+    passed_variables = check_passed_variables(policy, args)
+    if passed_variables:
+        return jsonify({"error": passed_variables}), 400
 
     args = request.args.to_dict(flat=True)
     print(args)
